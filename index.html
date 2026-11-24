@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hopewell High School</title>
+<style>
+  /* Impact is not installed on Chromebooks/Chromeboxes, so Anton (an Impact look-alike) is bundled. */
+  @font-face {
+    font-family: "HHS Title";
+    src: local("Impact"), url("assets/anton.woff2") format("woff2");
+    font-display: block;
+  }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #6E9CE7;
+    cursor: default;
+  }
+  body.hide-cursor { cursor: none; }
+
+  /* The slide is drawn at 960 x 540 (16:9) and scaled to fill the screen. */
+  #stage {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 960px;
+    height: 540px;
+    transform-origin: center center;
+    overflow: hidden;
+    background: radial-gradient(circle farthest-corner at 50% 50%, #DFEAFB 0%, #6E9CE7 100%);
+    font-family: Arial, Arimo, "Liberation Sans", Helvetica, sans-serif;
+    color: #000;
+  }
+
+  .abs { position: absolute; }
+
+  #mascot { left: 540.5px; top: -16px; width: 445.2px; height: 609.3px; }
+
+  #info {
+    left: 62.8px; top: 99.5px; width: 433.3px; height: 415.3px;
+    padding: 9.6px; box-sizing: border-box;
+    line-height: 1.15;
+  }
+  #info p { margin: 0; white-space: pre; }
+  .sp48 { font-size: 64px; }
+  .sz60 { font-size: 80px; }
+  .sz27 { font-size: 36px; }
+
+  .sparkle { pointer-events: none; visibility: hidden; }
+  .sparkle.on { visibility: visible; }
+  #s56 { left: -55.8px; top: 239px;  width: 375.2px; height: 375.2px; transform: rotate(-36.66deg); }
+  #s57 { left: 339.2px; top: 315.1px; width: 260.8px; height: 260.8px; transform: rotate(-18.89deg); }
+  #s58 { left: -44.3px; top: -79.4px; width: 555.2px; height: 555.2px; transform: rotate(41.33deg); }
+
+  #title {
+    left: 54.1px; top: 7.75px; width: 684.8px; height: 68.2px;
+    padding: 9.6px; box-sizing: border-box;
+    font-family: "HHS Title", Impact, sans-serif;
+    font-size: 64px;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <img id="mascot" class="abs" src="assets/mascot.png" alt="">
+
+  <div id="info" class="abs">
+    <p class="sp48">&nbsp;</p>
+    <p class="sz60" id="time"></p>
+    <p class="sz27">&nbsp;</p>
+    <p class="sz27" id="longdate"></p>
+    <p class="sz27">&nbsp;</p>
+    <p class="sz27" id="date"></p>
+  </div>
+
+  <img id="s56" class="abs sparkle" src="assets/sparkle.gif" alt="">
+  <img id="s57" class="abs sparkle" src="assets/sparkle.gif" alt="">
+  <img id="s58" class="abs sparkle" src="assets/sparkle.gif" alt="">
+
+  <div id="title" class="abs">Hopewell High School</div>
+</div>
+
+<script>
+  var DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var MONTHS = ["January","February","March","April","May","June","July",
+                "August","September","October","November","December"];
+
+  function tick() {
+    var d = new Date();
+    var h = d.getHours();
+    var ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    var m = ("0" + d.getMinutes()).slice(-2);
+
+    setText("time", h + ":" + m + " " + ampm);
+    setText("longdate", " " + DAYS[d.getDay()] + ", " + MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear());
+    setText("date", " " + (d.getMonth() + 1) + "/" + d.getDate() + "/" + d.getFullYear());
+  }
+  function setText(id, s) {
+    var el = document.getElementById(id);
+    if (el.textContent !== s) el.textContent = s;
+  }
+
+  // Scale the 960x540 slide to fill the screen, like a slideshow does.
+  function fit() {
+    var s = Math.min(window.innerWidth / 960, window.innerHeight / 540);
+    document.getElementById("stage").style.transform =
+      "translate(-50%, -50%) scale(" + s + ")";
+  }
+
+  // Keep the board from going to sleep while the page is showing.
+  var lock = null;
+  function keepAwake() {
+    if (!("wakeLock" in navigator) || document.visibilityState !== "visible") return;
+    navigator.wakeLock.request("screen").then(function (l) { lock = l; }).catch(function () {});
+  }
+  document.addEventListener("visibilitychange", keepAwake);
+
+  // Bubbles start hidden, like the slide. Each click/tap steps through the same
+  // order her slide's click animations use; the click after the last one clears them.
+  var STEPS = [["s58", true], ["s58", false], ["s58", true], ["s57", true]];
+  var step = 0;
+  function show(id, on) {
+    var el = document.getElementById(id);
+    if (on) el.classList.add("on");
+    else el.classList.remove("on");
+  }
+  document.addEventListener("click", function () {
+    if (step >= STEPS.length) {
+      ["s56", "s57", "s58"].forEach(function (id) { show(id, false); });
+      step = 0;
+      return;
+    }
+    show(STEPS[step][0], STEPS[step][1]);
+    step++;
+  });
+
+  // Hide the mouse pointer after a few seconds of no movement.
+  var idle;
+  document.addEventListener("mousemove", function () {
+    document.body.classList.remove("hide-cursor");
+    clearTimeout(idle);
+    idle = setTimeout(function () { document.body.classList.add("hide-cursor"); }, 3000);
+  });
+
+  window.addEventListener("resize", fit);
+  fit();
+  tick();
+  setInterval(tick, 1000);
+  keepAwake();
+</script>
+</body>
+</html>
